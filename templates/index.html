@@ -7,14 +7,51 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; }
+
+        :root {
+            --bg-page: #F4F8FA;
+            --text-main: #1A2B3C;
+            --text-heading: #14293B;
+            --text-sub: #5B7285;
+            --text-label: #3D5568;
+            --card-bg: #FFFFFF;
+            --card-border: #E4EDF1;
+            --input-bg: #FAFCFD;
+            --input-border: #DCE7EC;
+            --input-focus-bg: #FFFFFF;
+            --shadow: rgba(20, 41, 59, 0.06);
+            --divider: rgba(0,0,0,0.06);
+        }
+
+        [data-theme="dark"] {
+            --bg-page: #0F1720;
+            --text-main: #E4EBF0;
+            --text-heading: #F2F6F8;
+            --text-sub: #93A4B3;
+            --text-label: #93A4B3;
+            --card-bg: #17222C;
+            --card-border: #263442;
+            --input-bg: #1D2A36;
+            --input-border: #2E3E4C;
+            --input-focus-bg: #1D2A36;
+            --shadow: rgba(0, 0, 0, 0.3);
+            --divider: rgba(255,255,255,0.08);
+        }
+
         body {
             font-family: 'Inter', -apple-system, sans-serif;
             max-width: 680px;
             margin: 0 auto;
             padding: 48px 24px;
-            background: #F4F8FA;
-            color: #1A2B3C;
+            background: var(--bg-page);
+            color: var(--text-main);
             line-height: 1.6;
+            transition: background 0.2s, color 0.2s;
+        }
+        .top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
         }
         .header {
             display: flex;
@@ -38,45 +75,64 @@
             font-size: 24px;
             font-weight: 700;
             margin: 0;
-            color: #14293B;
+            color: var(--text-heading);
         }
         .subtitle {
-            color: #5B7285;
+            color: var(--text-sub);
             font-size: 14px;
             margin: 0 0 32px 52px;
         }
+        .theme-toggle {
+            background: var(--card-bg);
+            border: 1.5px solid var(--card-border);
+            border-radius: 10px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            flex-shrink: 0;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .theme-toggle:hover {
+            border-color: #2A7F9E;
+        }
         .card {
-            background: white;
+            background: var(--card-bg);
             border-radius: 16px;
             padding: 24px;
-            box-shadow: 0 1px 3px rgba(20, 41, 59, 0.06), 0 1px 2px rgba(20, 41, 59, 0.04);
-            border: 1px solid #E4EDF1;
+            box-shadow: 0 1px 3px var(--shadow), 0 1px 2px var(--shadow);
+            border: 1px solid var(--card-border);
+            transition: background 0.2s, border-color 0.2s;
         }
         label {
             display: block;
             font-size: 13px;
             font-weight: 600;
-            color: #3D5568;
+            color: var(--text-label);
             margin-bottom: 8px;
             text-transform: uppercase;
             letter-spacing: 0.03em;
         }
         textarea {
             width: 100%;
-            border: 1.5px solid #DCE7EC;
+            border: 1.5px solid var(--input-border);
             border-radius: 10px;
             padding: 14px;
             font-family: inherit;
             font-size: 15px;
             resize: vertical;
             min-height: 100px;
-            transition: border-color 0.15s;
-            background: #FAFCFD;
+            transition: border-color 0.15s, background 0.2s;
+            background: var(--input-bg);
+            color: var(--text-main);
         }
         textarea:focus {
             outline: none;
             border-color: #2A7F9E;
-            background: white;
+            background: var(--input-focus-bg);
         }
         button {
             margin-top: 14px;
@@ -100,21 +156,41 @@
             border-radius: 16px;
             border: 1.5px solid;
         }
-        .urgency-emergency {
+        [data-theme="light"] .urgency-emergency,
+        :root:not([data-theme="dark"]) .urgency-emergency {
             background: #FEF2F2;
             border-color: #F3B4B4;
         }
-        .urgency-see-soon {
+        [data-theme="light"] .urgency-see-soon,
+        :root:not([data-theme="dark"]) .urgency-see-soon {
             background: #FFFAEB;
             border-color: #F5D48A;
         }
-        .urgency-routine {
+        [data-theme="light"] .urgency-routine,
+        :root:not([data-theme="dark"]) .urgency-routine {
             background: #F0FBF6;
             border-color: #A3E4C4;
         }
-        .urgency-unknown {
+        [data-theme="light"] .urgency-unknown,
+        :root:not([data-theme="dark"]) .urgency-unknown {
             background: #F4F6F7;
             border-color: #D6DEE2;
+        }
+        [data-theme="dark"] .urgency-emergency {
+            background: #2B1414;
+            border-color: #5C2626;
+        }
+        [data-theme="dark"] .urgency-see-soon {
+            background: #2B2410;
+            border-color: #5C4E1E;
+        }
+        [data-theme="dark"] .urgency-routine {
+            background: #10261B;
+            border-color: #245038;
+        }
+        [data-theme="dark"] .urgency-unknown {
+            background: #1D2530;
+            border-color: #33404D;
         }
         .badge {
             display: inline-flex;
@@ -142,35 +218,40 @@
         .result-label {
             font-size: 12px;
             font-weight: 600;
-            color: #5B7285;
+            color: var(--text-sub);
             text-transform: uppercase;
             letter-spacing: 0.03em;
             margin-bottom: 3px;
         }
         .result-value {
             font-size: 15px;
-            color: #14293B;
+            color: var(--text-main);
         }
         .disclaimer {
             font-size: 12.5px;
-            color: #7A8894;
+            color: var(--text-sub);
             margin-top: 18px;
             padding-top: 16px;
-            border-top: 1px solid rgba(0,0,0,0.06);
+            border-top: 1px solid var(--divider);
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="logo-icon">+</div>
-        <h1>Symptom Triage Assistant</h1>
+    <div class="top-row">
+        <div>
+            <div class="header">
+                <div class="logo-icon">+</div>
+                <h1>Symptom Triage Assistant</h1>
+            </div>
+            <p class="subtitle">AI-assisted symptom guidance</p>
+        </div>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">🌙</button>
     </div>
-    <p class="subtitle">AI-assisted symptom guidance</p>
 
     <div class="card">
         <form method="POST">
             <label for="symptoms">Describe your symptoms</label>
-            <textarea id="symptoms" name="symptoms" placeholder="e.g. I've had a mild headache and sore throat since yesterday..."></textarea>
+            <textarea id="symptoms" name="symptoms" placeholder="e.g. I've had a mild headache and sore throat since yesterday...">{{ result.input_received if result else '' }}</textarea>
             <button type="submit">Get guidance</button>
         </form>
     </div>
@@ -205,5 +286,24 @@
             <p class="disclaimer">This is not a medical diagnosis. Please consult a qualified professional for any health concerns.</p>
         </div>
     {% endif %}
+
+    <script>
+        const toggleBtn = document.getElementById('themeToggle');
+        const root = document.documentElement;
+
+        function applyTheme(theme) {
+            root.setAttribute('data-theme', theme);
+            toggleBtn.textContent = theme === 'dark' ? '☀️' : '🌙';
+            localStorage.setItem('theme', theme);
+        }
+
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        applyTheme(savedTheme);
+
+        toggleBtn.addEventListener('click', function() {
+            const current = root.getAttribute('data-theme');
+            applyTheme(current === 'dark' ? 'light' : 'dark');
+        });
+    </script>
 </body>
 </html>
