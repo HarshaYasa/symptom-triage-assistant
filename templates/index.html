@@ -2,93 +2,207 @@
 <html>
 <head>
     <title>Symptom Triage Assistant</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        * { box-sizing: border-box; }
         body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 40px auto;
-            padding: 0 20px;
-            color: #222;
+            font-family: 'Inter', -apple-system, sans-serif;
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 48px 24px;
+            background: #F4F8FA;
+            color: #1A2B3C;
+            line-height: 1.6;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #2A7F9E, #1D5A73);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            flex-shrink: 0;
         }
         h1 {
-            font-size: 28px;
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+            color: #14293B;
+        }
+        .subtitle {
+            color: #5B7285;
+            font-size: 14px;
+            margin: 0 0 32px 52px;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(20, 41, 59, 0.06), 0 1px 2px rgba(20, 41, 59, 0.04);
+            border: 1px solid #E4EDF1;
+        }
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #3D5568;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
         }
         textarea {
             width: 100%;
+            border: 1.5px solid #DCE7EC;
+            border-radius: 10px;
+            padding: 14px;
             font-family: inherit;
             font-size: 15px;
-            padding: 10px;
+            resize: vertical;
+            min-height: 100px;
+            transition: border-color 0.15s;
+            background: #FAFCFD;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #2A7F9E;
+            background: white;
         }
         button {
-            margin-top: 10px;
-            padding: 8px 20px;
+            margin-top: 14px;
+            background: #2A7F9E;
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 10px;
             font-size: 15px;
+            font-weight: 600;
+            font-family: inherit;
             cursor: pointer;
+            transition: background 0.15s;
+        }
+        button:hover {
+            background: #1D5A73;
         }
         .result-box {
-            margin-top: 30px;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
+            margin-top: 20px;
+            padding: 24px;
+            border-radius: 16px;
+            border: 1.5px solid;
         }
         .urgency-emergency {
-            background-color: #fdecea;
-            border-color: #f44336;
+            background: #FEF2F2;
+            border-color: #F3B4B4;
         }
         .urgency-see-soon {
-            background-color: #fff8e1;
-            border-color: #ffb300;
+            background: #FFFAEB;
+            border-color: #F5D48A;
         }
         .urgency-routine {
-            background-color: #e8f5e9;
-            border-color: #43a047;
+            background: #F0FBF6;
+            border-color: #A3E4C4;
         }
         .urgency-unknown {
-            background-color: #f5f5f5;
-            border-color: #999;
+            background: #F4F6F7;
+            border-color: #D6DEE2;
         }
         .badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 13px;
-            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
             color: white;
-            margin-bottom: 10px;
+            margin-bottom: 16px;
         }
-        .badge-emergency { background-color: #e53935; }
-        .badge-see-soon { background-color: #fb8c00; }
-        .badge-routine { background-color: #43a047; }
-        .badge-unknown { background-color: #757575; }
+        .badge-emergency { background: #DC3939; }
+        .badge-see-soon { background: #E0A426; }
+        .badge-routine { background: #23A566; }
+        .badge-unknown { background: #7A8894; }
+        .result-row {
+            margin-bottom: 12px;
+        }
+        .result-row:last-of-type {
+            margin-bottom: 0;
+        }
+        .result-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #5B7285;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            margin-bottom: 3px;
+        }
+        .result-value {
+            font-size: 15px;
+            color: #14293B;
+        }
         .disclaimer {
-            font-size: 13px;
-            color: #666;
-            margin-top: 15px;
+            font-size: 12.5px;
+            color: #7A8894;
+            margin-top: 18px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(0,0,0,0.06);
         }
     </style>
 </head>
 <body>
-    <h1>Symptom Triage Assistant</h1>
-    <form method="POST">
-        <textarea name="symptoms" rows="4" placeholder="Describe your symptoms..."></textarea><br>
-        <button type="submit">Submit</button>
-    </form>
+    <div class="header">
+        <div class="logo-icon">+</div>
+        <h1>Symptom Triage Assistant</h1>
+    </div>
+    <p class="subtitle">AI-assisted symptom guidance</p>
+
+    <div class="card">
+        <form method="POST">
+            <label for="symptoms">Describe your symptoms</label>
+            <textarea id="symptoms" name="symptoms" placeholder="e.g. I've had a mild headache and sore throat since yesterday..."></textarea>
+            <button type="submit">Get guidance</button>
+        </form>
+    </div>
 
     {% if result %}
         <div class="result-box urgency-{{ result.urgency }}">
-            <span class="badge badge-{{ result.urgency }}">{{ result.urgency | upper }}</span>
-
-            <p><strong>You entered:</strong> {{ result.input_received }}</p>
+            <span class="badge badge-{{ result.urgency }}">{{ result.urgency | replace("-", " ") }}</span>
 
             {% if result.urgency == "emergency" %}
-                <p><strong>{{ result.message }}</strong></p>
+                <div class="result-row">
+                    <div class="result-value" style="font-weight: 600;">{{ result.message }}</div>
+                </div>
+            {% elif result.urgency == "unknown" and result.body_system is not defined %}
+                <div class="result-row">
+                    <div class="result-value">{{ result.message }}</div>
+                </div>
             {% else %}
-                <p><strong>Likely body system:</strong> {{ result.body_system }}</p>
-                <p><strong>Recommended specialist:</strong> {{ result.specialist }}</p>
-                <p><strong>Reasoning:</strong> {{ result.message }}</p>
+                <div class="result-row">
+                    <div class="result-label">Likely body system</div>
+                    <div class="result-value">{{ result.body_system }}</div>
+                </div>
+                <div class="result-row">
+                    <div class="result-label">Recommended specialist</div>
+                    <div class="result-value">{{ result.specialist }}</div>
+                </div>
+                <div class="result-row">
+                    <div class="result-label">Reasoning</div>
+                    <div class="result-value">{{ result.message }}</div>
+                </div>
             {% endif %}
 
-            <p class="disclaimer">This is not a medical diagnosis. Please consult a qualified professional.</p>
+            <p class="disclaimer">This is not a medical diagnosis. Please consult a qualified professional for any health concerns.</p>
         </div>
     {% endif %}
 </body>
