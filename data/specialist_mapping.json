@@ -1,0 +1,21 @@
+{
+  "chest pain": "Cardiologist",
+  "shortness of breath": "Pulmonologist",
+  "skin rash": "Dermatologist",
+  "acne": "Dermatologist",
+  "joint pain": "Orthopedist",
+  "back pain": "Orthopedist",
+  "headache": "Neurologist",
+  "migraine": "Neurologist",
+  "stomach pain": "Gastroenterologist",
+  "nausea": "Gastroenterologist",
+  "throat pain": "ENT Specialist",
+  "ear pain": "ENT Specialist",
+  "blurred vision": "Ophthalmologist",
+  "eye redness": "Ophthalmologist",
+  "frequent urination": "Urologist",
+  "anxiety": "Psychiatrist",
+  "low mood": "Psychiatrist",
+  "fatigue": "General Physician",
+  "fever": "General Physician"
+}

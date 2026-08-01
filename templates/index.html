@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Symptom Triage Assistant</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 0 20px;
+            color: #222;
+        }
+        h1 {
+            font-size: 28px;
+        }
+        textarea {
+            width: 100%;
+            font-family: inherit;
+            font-size: 15px;
+            padding: 10px;
+        }
+        button {
+            margin-top: 10px;
+            padding: 8px 20px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+        .result-box {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .urgency-emergency {
+            background-color: #fdecea;
+            border-color: #f44336;
+        }
+        .urgency-see-soon {
+            background-color: #fff8e1;
+            border-color: #ffb300;
+        }
+        .urgency-routine {
+            background-color: #e8f5e9;
+            border-color: #43a047;
+        }
+        .urgency-unknown {
+            background-color: #f5f5f5;
+            border-color: #999;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 10px;
+        }
+        .badge-emergency { background-color: #e53935; }
+        .badge-see-soon { background-color: #fb8c00; }
+        .badge-routine { background-color: #43a047; }
+        .badge-unknown { background-color: #757575; }
+        .disclaimer {
+            font-size: 13px;
+            color: #666;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Symptom Triage Assistant</h1>
+    <form method="POST">
+        <textarea name="symptoms" rows="4" placeholder="Describe your symptoms..."></textarea><br>
+        <button type="submit">Submit</button>
+    </form>
+
+    {% if result %}
+        <div class="result-box urgency-{{ result.urgency }}">
+            <span class="badge badge-{{ result.urgency }}">{{ result.urgency | upper }}</span>
+
+            <p><strong>You entered:</strong> {{ result.input_received }}</p>
+
+            {% if result.urgency == "emergency" %}
+                <p><strong>{{ result.message }}</strong></p>
+            {% else %}
+                <p><strong>Likely body system:</strong> {{ result.body_system }}</p>
+                <p><strong>Recommended specialist:</strong> {{ result.specialist }}</p>
+                <p><strong>Reasoning:</strong> {{ result.message }}</p>
+            {% endif %}
+
+            <p class="disclaimer">This is not a medical diagnosis. Please consult a qualified professional.</p>
+        </div>
+    {% endif %}
+</body>
+</html>
