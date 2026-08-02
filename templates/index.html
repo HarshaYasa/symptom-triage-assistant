@@ -246,9 +246,9 @@
             <p class="subtitle">AI-assisted symptom guidance</p>
         </div>
         <div style="display: flex; gap: 8px;">
-    <a href="/history" style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: var(--card-bg); border: 1.5px solid var(--card-border); border-radius: 10px; text-decoration: none; font-size: 18px;" title="View history">📋</a>
-    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">🌙</button>
-</div>
+            <a href="/history" style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: var(--card-bg); border: 1.5px solid var(--card-border); border-radius: 10px; text-decoration: none; font-size: 18px;" title="View history">📋</a>
+            <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">🌙</button>
+        </div>
     </div>
 
     <div class="card">
@@ -289,10 +289,11 @@
                 </div>
             {% endif %}
 
-            <p class="disclaimer">This is not a medical diagnosis. Please consult a qualified professional for any health concerns.</p>
             {% if result.urgency != "unknown" or result.body_system is defined %}
             <a href="/download-pdf" style="display: inline-block; margin-top: 8px; padding: 8px 18px; background: transparent; border: 1.5px solid #2A7F9E; color: #2A7F9E; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600;">⬇ Download PDF summary</a>
             {% endif %}
+
+            <p class="disclaimer">This is not a medical diagnosis. Please consult a qualified professional for any health concerns.</p>
         </div>
     {% endif %}
 
@@ -360,52 +361,5 @@
             voiceBtn.style.display = 'none';
         }
     </script>
-</body>
-</html>
-    const voiceBtn = document.getElementById('voiceBtn');
-        const symptomsField = document.getElementById('symptoms');
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-        if (SpeechRecognition) {
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'en-US';
-            recognition.interimResults = false;
-
-            let isListening = false;
-
-            voiceBtn.addEventListener('click', function() {
-                if (isListening) {
-                    recognition.stop();
-                    return;
-                }
-                recognition.start();
-            });
-
-            recognition.onstart = function() {
-                isListening = true;
-                voiceBtn.textContent = '⏹';
-                voiceBtn.style.background = '#DC3939';
-            };
-
-            recognition.onend = function() {
-                isListening = false;
-                voiceBtn.textContent = '🎤';
-                voiceBtn.style.background = '#2A7F9E';
-            };
-
-            recognition.onresult = function(event) {
-                const transcript = event.results[0][0].transcript;
-                symptomsField.value += (symptomsField.value ? ' ' : '') + transcript;
-            };
-
-            recognition.onerror = function(event) {
-                console.error('Speech recognition error:', event.error);
-                isListening = false;
-                voiceBtn.textContent = '🎤';
-                voiceBtn.style.background = '#2A7F9E';
-            };
-        } else {
-            voiceBtn.style.display = 'none';
-        }
 </body>
 </html>
