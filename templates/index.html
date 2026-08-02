@@ -313,7 +313,55 @@
             const current = root.getAttribute('data-theme');
             applyTheme(current === 'dark' ? 'light' : 'dark');
         });
+
+        const voiceBtn = document.getElementById('voiceBtn');
+        const symptomsField = document.getElementById('symptoms');
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+
+            let isListening = false;
+
+            voiceBtn.addEventListener('click', function() {
+                if (isListening) {
+                    recognition.stop();
+                    return;
+                }
+                recognition.start();
+            });
+
+            recognition.onstart = function() {
+                isListening = true;
+                voiceBtn.textContent = '⏹';
+                voiceBtn.style.background = '#DC3939';
+            };
+
+            recognition.onend = function() {
+                isListening = false;
+                voiceBtn.textContent = '🎤';
+                voiceBtn.style.background = '#2A7F9E';
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                symptomsField.value += (symptomsField.value ? ' ' : '') + transcript;
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error:', event.error);
+                isListening = false;
+                voiceBtn.textContent = '🎤';
+                voiceBtn.style.background = '#2A7F9E';
+            };
+        } else {
+            voiceBtn.style.display = 'none';
+        }
     </script>
+</body>
+</html>
     const voiceBtn = document.getElementById('voiceBtn');
         const symptomsField = document.getElementById('symptoms');
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
