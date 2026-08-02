@@ -7,7 +7,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; }
-
         :root {
             --bg-page: #F4F8FA;
             --text-main: #1A2B3C;
@@ -22,7 +21,6 @@
             --shadow: rgba(20, 41, 59, 0.06);
             --divider: rgba(0,0,0,0.06);
         }
-
         [data-theme="dark"] {
             --bg-page: #0F1720;
             --text-main: #E4EBF0;
@@ -37,7 +35,6 @@
             --shadow: rgba(0, 0, 0, 0.3);
             --divider: rgba(255,255,255,0.08);
         }
-
         body {
             font-family: 'Inter', -apple-system, sans-serif;
             max-width: 680px;
@@ -234,6 +231,14 @@
             padding-top: 16px;
             border-top: 1px solid var(--divider);
         }
+        .body-diagram-wrap {
+            margin-bottom: 16px;
+        }
+        .body-diagram-label {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin: 0 0 8px;
+        }
     </style>
 </head>
 <body>
@@ -254,6 +259,21 @@
     <div class="card">
         <form method="POST">
             <label for="symptoms">Describe your symptoms</label>
+
+            <div class="body-diagram-wrap">
+                <p class="body-diagram-label">Or click a body area to add it</p>
+                <svg viewBox="0 0 200 400" style="width: 130px; height: 260px; display: block;">
+                    <circle class="body-part" data-part="head" cx="100" cy="38" r="30" fill="#DCE7EC" stroke="#2A7F9E" stroke-width="1.5" style="cursor: pointer;"/>
+                    <rect class="body-part" data-part="throat/neck" x="90" y="62" width="20" height="16" fill="#DCE7EC" stroke="#2A7F9E" stroke-width="1.5" style="cursor: pointer;"/>
+                    <path class="body-part" data-part="chest" d="M 70 78 Q 60 78 58 95 L 58 140 L 142 140 L 142 95 Q 140 78 130 78 Z" fill="#DCE7EC" stroke="#2A7F9E" stroke-width="1.5" style="cursor: pointer;"/>
+                    <path class="body-part" data-part="stomach" d="M 58 140 L 142 140 L 138 200 Q 100 210 62 200 Z" fill="#DCE7EC" stroke="#2A7F9E" stroke-width="1.5" style="cursor: pointer;"/>
+                    <path class="body-part" data-part="left arm" d="M 58 85 Q 35 88 30 130 L 26 195 Q 25 205 35 205 Q 44 205 45 195 L 50 135 Q 52 100 58 90 Z" fill="#DCE7EC" stroke="#2A7F9E" stroke-width="1.5" style="cursor: pointer;"/>
+                    <path class="body-part" data-part="right arm" d="M 142 85 Q 165 88 170 130 L 174 195 Q 175 205 165 205 Q 156 205 155 195 L 150 135 Q 148 100 142 90 Z" fill="#DCE7EC" stroke="#2A7F9E" stroke-width="1.5" style="cursor: pointer;"/>
+                    <path class="body-part" data-part="left leg" d="M 63 200 Q 60 200 60 210 L 58 340 Q 58 350 68 350 Q 76 350 77 340 L 82 215 Q 83 205 78 200 Z" fill="#DCE7EC" stroke="#2A7F9E" stroke-width="1.5" style="cursor: pointer;"/>
+                    <path class="body-part" data-part="right leg" d="M 137 200 Q 140 200 140 210 L 142 340 Q 142 350 132 350 Q 124 350 123 340 L 118 215 Q 117 205 122 200 Z" fill="#DCE7EC" stroke="#2A7F9E" stroke-width="1.5" style="cursor: pointer;"/>
+                </svg>
+            </div>
+
             <div style="position: relative;">
                 <textarea id="symptoms" name="symptoms" placeholder="e.g. I've had a mild headache and sore throat since yesterday...">{{ result.input_received if result else '' }}</textarea>
                 <button type="button" id="voiceBtn" title="Speak your symptoms" style="position: absolute; bottom: 10px; right: 10px; width: 34px; height: 34px; border-radius: 50%; border: none; background: #2A7F9E; color: white; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center;">🎤</button>
@@ -360,6 +380,28 @@
         } else {
             voiceBtn.style.display = 'none';
         }
+
+        const bodyParts = document.querySelectorAll('.body-part');
+        bodyParts.forEach(function(part) {
+            part.addEventListener('mouseenter', function() {
+                part.setAttribute('fill', '#2A7F9E');
+            });
+            part.addEventListener('mouseleave', function() {
+                if (!part.classList.contains('selected')) {
+                    part.setAttribute('fill', '#DCE7EC');
+                }
+            });
+            part.addEventListener('click', function() {
+                const label = part.getAttribute('data-part');
+                symptomsField.value += (symptomsField.value ? ', ' : '') + label + ' pain';
+                part.classList.add('selected');
+                part.setAttribute('fill', '#1D5A73');
+                setTimeout(function() {
+                    part.classList.remove('selected');
+                    part.setAttribute('fill', '#DCE7EC');
+                }, 400);
+            });
+        });
     </script>
 </body>
 </html>
