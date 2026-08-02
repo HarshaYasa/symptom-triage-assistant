@@ -254,7 +254,10 @@
     <div class="card">
         <form method="POST">
             <label for="symptoms">Describe your symptoms</label>
-            <textarea id="symptoms" name="symptoms" placeholder="e.g. I've had a mild headache and sore throat since yesterday...">{{ result.input_received if result else '' }}</textarea>
+            <div style="position: relative;">
+                <textarea id="symptoms" name="symptoms" placeholder="e.g. I've had a mild headache and sore throat since yesterday...">{{ result.input_received if result else '' }}</textarea>
+                <button type="button" id="voiceBtn" title="Speak your symptoms" style="position: absolute; bottom: 10px; right: 10px; width: 34px; height: 34px; border-radius: 50%; border: none; background: #2A7F9E; color: white; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center;">🎤</button>
+            </div>
             <button type="submit">Get guidance</button>
         </form>
     </div>
@@ -311,5 +314,50 @@
             applyTheme(current === 'dark' ? 'light' : 'dark');
         });
     </script>
+    const voiceBtn = document.getElementById('voiceBtn');
+        const symptomsField = document.getElementById('symptoms');
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+
+            let isListening = false;
+
+            voiceBtn.addEventListener('click', function() {
+                if (isListening) {
+                    recognition.stop();
+                    return;
+                }
+                recognition.start();
+            });
+
+            recognition.onstart = function() {
+                isListening = true;
+                voiceBtn.textContent = '⏹';
+                voiceBtn.style.background = '#DC3939';
+            };
+
+            recognition.onend = function() {
+                isListening = false;
+                voiceBtn.textContent = '🎤';
+                voiceBtn.style.background = '#2A7F9E';
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                symptomsField.value += (symptomsField.value ? ' ' : '') + transcript;
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error:', event.error);
+                isListening = false;
+                voiceBtn.textContent = '🎤';
+                voiceBtn.style.background = '#2A7F9E';
+            };
+        } else {
+            voiceBtn.style.display = 'none';
+        }
 </body>
 </html>
