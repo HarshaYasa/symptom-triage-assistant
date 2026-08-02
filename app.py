@@ -114,8 +114,15 @@ def log_query(symptoms, urgency, specialist):
 
 init_db()
 
-@app.route("/", methods=["GET", "POST"])
-def index():
+@app.route("/history")
+def history():
+    conn = sqlite3.connect("logs.db")
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("SELECT * FROM logs ORDER BY id DESC LIMIT 50")
+    rows = c.fetchall()
+    conn.close()
+    return render_template("history.html", logs=rows)
     result = None
     if request.method == "POST":
         symptoms = request.form.get("symptoms", "")
