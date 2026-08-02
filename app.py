@@ -1,15 +1,23 @@
 import os
 import json
 import sqlite3
+import io
 from datetime import datetime
-from flask import Flask, render_template, request
+from datetime import datetime as dt
+from flask import Flask, render_template, request, session, send_file
 from google import genai
 from dotenv import load_dotenv
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
 
 load_dotenv()
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key-change-this")
 
 EMERGENCY_KEYWORDS = [
     "chest pain",
@@ -114,20 +122,13 @@ def log_query(symptoms, urgency, specialist):
 
 init_db()
 
-@app.route("/history")
-def history():
-    conn = sqlite3.connect("logs.db")
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute("SELECT * FROM logs ORDER BY id DESC LIMIT 50")
-    rows = c.fetchall()
-    conn.close()
-    return render_template("history.html", logs=rows)
+@app.route("/", methods=["GET", "POST"])
+def index():
     result = None
     if request.method == "POST":
-        symptoms = request.form.get("symptoms", "")
+        symptoms = request.form.get("symptoms", "").strip()
 
-        if not symptoms.strip():
+        if not symptoms:
             result = {
                 "input_received": "",
                 "urgency": "unknown",
@@ -150,7 +151,73 @@ def history():
                 "message": ai_result.get("reasoning", "Please consult a doctor for evaluation.")
             }
             log_query(symptoms, result["urgency"], result["specialist"])
+
+        if result:
+            session["last_result"] = result
+
     return render_template("index.html", result=result)
+
+@app.route("/history")
+def history():
+    conn = sqlite3.connect("logs.db")
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("SELECT * FROM logs ORDER BY id DESC LIMIT 50")
+    rows = c.fetchall()
+    conn.close()
+    return render_template("history.html", logs=rows)
+
+@app.route("/download-pdf")
+def download_pdf():
+    result = session.get("last_result")
+    if not result:
+        return "No result available to download. Please submit a symptom query first.", 400
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.75*inch, bottomMargin=0.75*inch)
+    styles = getSampleStyleSheet()
+
+    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontSize=18, textColor=colors.HexColor('#14293B'))
+    label_style = ParagraphStyle('LabelStyle', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor('#5B7285'), spaceBefore=10)
+    value_style = ParagraphStyle('ValueStyle', parent=styles['Normal'], fontSize=12, textColor=colors.HexColor('#14293B'), spaceAfter=4)
+    disclaimer_style = ParagraphStyle('DisclaimerStyle', parent=styles['Normal'], fontSize=8, textColor=colors.grey, spaceBefore=20)
+
+    elements = []
+    elements.append(Paragraph("Symptom Triage Summary", title_style))
+    elements.append(Paragraph(dt.now().strftime("%B %d, %Y at %I:%M %p"), disclaimer_style))
+    elements.append(Spacer(1, 12))
+
+    elements.append(Paragraph("SYMPTOMS ENTERED", label_style))
+    elements.append(Paragraph(result.get("input_received", ""), value_style))
+
+    elements.append(Paragraph("URGENCY LEVEL", label_style))
+    elements.append(Paragraph(result.get("urgency", "unknown").upper(), value_style))
+
+    if result.get("body_system"):
+        elements.append(Paragraph("LIKELY BODY SYSTEM", label_style))
+        elements.append(Paragraph(result.get("body_system", ""), value_style))
+
+    if result.get("specialist"):
+        elements.append(Paragraph("RECOMMENDED SPECIALIST", label_style))
+        elements.append(Paragraph(result.get("specialist", ""), value_style))
+
+    elements.append(Paragraph("DETAILS", label_style))
+    elements.append(Paragraph(result.get("message", ""), value_style))
+
+    elements.append(Paragraph(
+        "This is not a medical diagnosis. Please consult a qualified healthcare professional for any health concerns.",
+        disclaimer_style
+    ))
+
+    doc.build(elements)
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name="symptom_triage_summary.pdf",
+        mimetype="application/pdf"
+    )
 
 if __name__ == "__main__":
     app.run(debug=True)
