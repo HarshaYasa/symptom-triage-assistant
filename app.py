@@ -55,7 +55,7 @@ def match_specialist_dataset(symptoms):
             matches[keyword] = specialist
     return matches
 
-def get_triage_recommendation(symptoms):
+def get_triage_recommendation(symptoms, duration="", severity=""):
     dataset_matches = match_specialist_dataset(symptoms)
 
     if dataset_matches:
@@ -75,7 +75,9 @@ Given the symptoms below, respond ONLY with valid JSON in this exact format, no 
   "reasoning": "one sentence explanation"
 }}
 
-Symptoms: {symptoms}"""
+Symptoms: {symptoms}
+Duration: {duration if duration else "not specified"}
+Severity (1-10 scale): {severity if severity else "not specified"}"""
 
     try:
         response = client.models.generate_content(
@@ -127,6 +129,8 @@ def index():
     result = None
     if request.method == "POST":
         symptoms = request.form.get("symptoms", "").strip()
+        duration = request.form.get("duration", "").strip()
+        severity = request.form.get("severity", "").strip()
 
         if not symptoms:
             result = {
@@ -142,7 +146,7 @@ def index():
             }
             log_query(symptoms, "emergency", "N/A")
         else:
-            ai_result = get_triage_recommendation(symptoms)
+            ai_result = get_triage_recommendation(symptoms, duration, severity)
             result = {
                 "input_received": symptoms,
                 "urgency": ai_result.get("urgency_level", "unknown"),
