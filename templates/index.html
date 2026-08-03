@@ -231,6 +231,29 @@
             padding-top: 16px;
             border-top: 1px solid var(--divider);
         }
+        @media print {
+            .theme-toggle, #voiceBtn, .top-row a[href="/history"], form button[type="submit"], .no-print {
+                display: none !important;
+            }
+            body {
+                background: white !important;
+                color: black !important;
+                max-width: 100%;
+                padding: 20px;
+            }
+            .card {
+                display: none;
+            }
+            .result-box {
+                border: 1px solid #000 !important;
+                background: white !important;
+                box-shadow: none !important;
+            }
+            .badge {
+                background: #000 !important;
+                color: white !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -306,7 +329,10 @@
             {% endif %}
 
             {% if result.urgency != "unknown" or result.body_system is defined %}
-            <a href="/download-pdf" style="display: inline-block; margin-top: 8px; padding: 8px 18px; background: transparent; border: 1.5px solid #2A7F9E; color: #2A7F9E; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600;">⬇ Download PDF summary</a>
+            <div class="no-print" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <a href="/download-pdf" style="display: inline-block; margin-top: 8px; padding: 8px 18px; background: transparent; border: 1.5px solid #2A7F9E; color: #2A7F9E; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600;">⬇ Download PDF summary</a>
+                <button type="button" onclick="window.print()" style="margin-top: 8px; padding: 8px 18px; background: transparent; border: 1.5px solid #2A7F9E; color: #2A7F9E; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;">🖨 Print result</button>
+            </div>
             {% endif %}
 
             <p class="disclaimer">This is not a medical diagnosis. Please consult a qualified professional for any health concerns.</p>
