@@ -20,19 +20,9 @@ app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key-change-this")
 
 EMERGENCY_KEYWORDS = [
-    "chest pain",
-    "can't breathe",
-    "cannot breathe",
-    "difficulty breathing",
-    "severe bleeding",
-    "unconscious",
-    "not breathing",
-    "suicidal",
-    "want to die",
-    "severe allergic reaction",
-    "stroke",
-    "seizure",
-    "heart attack"
+    "chest pain", "can't breathe", "cannot breathe", "difficulty breathing",
+    "severe bleeding", "unconscious", "not breathing", "suicidal",
+    "want to die", "severe allergic reaction", "stroke", "seizure", "heart attack"
 ]
 
 def check_emergency(symptom_text):
@@ -55,7 +45,7 @@ def match_specialist_dataset(symptoms):
             matches[keyword] = specialist
     return matches
 
-def get_triage_recommendation(symptoms, duration="", severity=""):
+def get_triage_recommendation(symptoms, duration="", severity="", clarification_answer=""):
     dataset_matches = match_specialist_dataset(symptoms)
 
     if dataset_matches:
@@ -63,12 +53,25 @@ def get_triage_recommendation(symptoms, duration="", severity=""):
     else:
         context = "No reference data matched these symptoms."
 
+    clarification_context = ""
+    if clarification_answer:
+        clarification_context = f"\nAdditional clarification from user: {clarification_answer}"
+
     prompt = f"""You are a medical triage assistant, not a doctor. You do not diagnose conditions.
 
 {context}
 
-Given the symptoms below, respond ONLY with valid JSON in this exact format, no other text:
+Given the symptoms below, decide if you have ENOUGH information to give a confident triage recommendation.
+
+If the input is too vague to assess (e.g. very short, no detail on what/where/how long), respond ONLY with this JSON:
 {{
+  "needs_clarification": true,
+  "clarifying_question": "one specific question to ask the user"
+}}
+
+If you have enough information, respond ONLY with this JSON:
+{{
+  "needs_clarification": false,
   "likely_body_system": "string",
   "urgency_level": "routine" or "see-soon",
   "recommended_specialist": "string",
@@ -77,7 +80,7 @@ Given the symptoms below, respond ONLY with valid JSON in this exact format, no 
 
 Symptoms: {symptoms}
 Duration: {duration if duration else "not specified"}
-Severity (1-10 scale): {severity if severity else "not specified"}"""
+Severity (1-10 scale): {severity if severity else "not specified"}{clarification_context}"""
 
     try:
         response = client.models.generate_content(
@@ -91,6 +94,7 @@ Severity (1-10 scale): {severity if severity else "not specified"}"""
     except Exception as e:
         print("GEMINI ERROR:", e)
         return {
+            "needs_clarification": False,
             "likely_body_system": "unknown",
             "urgency_level": "unknown",
             "recommended_specialist": "general physician",
@@ -126,40 +130,96 @@ init_db()
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    result = None
+    if request.method == "GET" and request.args.get("reset"):
+        session.pop("conversation", None)
+        session.pop("pending_question", None)
+        session.pop("pending_symptoms", None)
+        session.pop("pending_duration", None)
+        session.pop("pending_severity", None)
+
+    conversation = session.get("conversation", [])
+    pending_question = session.get("pending_question")
+
     if request.method == "POST":
-        symptoms = request.form.get("symptoms", "").strip()
-        duration = request.form.get("duration", "").strip()
-        severity = request.form.get("severity", "").strip()
+        if request.form.get("clarification_answer") is not None and pending_question:
+            symptoms = session.get("pending_symptoms", "")
+            duration = session.get("pending_duration", "")
+            severity = session.get("pending_severity", "")
+            clarification_answer = request.form.get("clarification_answer", "").strip()
 
-        if not symptoms:
-            result = {
-                "input_received": "",
-                "urgency": "unknown",
-                "message": "Please enter some symptoms to get a recommendation."
-            }
-        elif check_emergency(symptoms):
-            result = {
-                "input_received": symptoms,
-                "urgency": "emergency",
-                "message": "This may be a medical emergency. Please call your local emergency number or go to the nearest emergency room immediately."
-            }
-            log_query(symptoms, "emergency", "N/A")
+            conversation.append({"role": "user", "text": clarification_answer})
+
+            ai_result = get_triage_recommendation(symptoms, duration, severity, clarification_answer)
+
+            if ai_result.get("needs_clarification"):
+                new_question = ai_result.get("clarifying_question", "Can you provide more detail?")
+                conversation.append({"role": "assistant", "text": new_question, "type": "question"})
+                session["pending_question"] = new_question
+                pending_question = new_question
+            else:
+                result = {
+                    "input_received": symptoms,
+                    "urgency": ai_result.get("urgency_level", "unknown"),
+                    "body_system": ai_result.get("likely_body_system", "unknown"),
+                    "specialist": ai_result.get("recommended_specialist", "general physician"),
+                    "message": ai_result.get("reasoning", "Please consult a doctor for evaluation.")
+                }
+                log_query(symptoms, result["urgency"], result["specialist"])
+                conversation.append({"role": "assistant", "type": "result", "result": result})
+                session["last_result"] = result
+                session.pop("pending_question", None)
+                session.pop("pending_symptoms", None)
+                session.pop("pending_duration", None)
+                session.pop("pending_severity", None)
+                pending_question = None
+
         else:
-            ai_result = get_triage_recommendation(symptoms, duration, severity)
-            result = {
-                "input_received": symptoms,
-                "urgency": ai_result.get("urgency_level", "unknown"),
-                "body_system": ai_result.get("likely_body_system", "unknown"),
-                "specialist": ai_result.get("recommended_specialist", "general physician"),
-                "message": ai_result.get("reasoning", "Please consult a doctor for evaluation.")
-            }
-            log_query(symptoms, result["urgency"], result["specialist"])
+            symptoms = request.form.get("symptoms", "").strip()
+            duration = request.form.get("duration", "").strip()
+            severity = request.form.get("severity", "").strip()
 
-        if result:
-            session["last_result"] = result
+            if symptoms:
+                user_msg = symptoms
+                if duration:
+                    user_msg += f" (duration: {duration})"
+                if severity:
+                    user_msg += f" (severity: {severity}/10)"
+                conversation.append({"role": "user", "text": user_msg})
 
-    return render_template("index.html", result=result)
+                if check_emergency(symptoms):
+                    result = {
+                        "input_received": symptoms,
+                        "urgency": "emergency",
+                        "message": "This may be a medical emergency. Please call your local emergency number or go to the nearest emergency room immediately."
+                    }
+                    log_query(symptoms, "emergency", "N/A")
+                    conversation.append({"role": "assistant", "type": "result", "result": result})
+                else:
+                    ai_result = get_triage_recommendation(symptoms, duration, severity)
+
+                    if ai_result.get("needs_clarification"):
+                        new_question = ai_result.get("clarifying_question", "Can you provide more detail?")
+                        conversation.append({"role": "assistant", "text": new_question, "type": "question"})
+                        session["pending_question"] = new_question
+                        session["pending_symptoms"] = symptoms
+                        session["pending_duration"] = duration
+                        session["pending_severity"] = severity
+                        pending_question = new_question
+                    else:
+                        result = {
+                            "input_received": symptoms,
+                            "urgency": ai_result.get("urgency_level", "unknown"),
+                            "body_system": ai_result.get("likely_body_system", "unknown"),
+                            "specialist": ai_result.get("recommended_specialist", "general physician"),
+                            "message": ai_result.get("reasoning", "Please consult a doctor for evaluation.")
+                        }
+                        log_query(symptoms, result["urgency"], result["specialist"])
+                        conversation.append({"role": "assistant", "type": "result", "result": result})
+                        session["last_result"] = result
+
+        session["conversation"] = conversation
+
+    return render_template("index.html", conversation=conversation, pending_question=pending_question)
 
 @app.route("/history")
 def history():
