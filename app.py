@@ -2,6 +2,8 @@ import os
 import json
 import sqlite3
 import io
+import time
+from collections import defaultdict
 from datetime import datetime
 from datetime import datetime as dt
 from flask import Flask, render_template, request, session, send_file
@@ -18,6 +20,20 @@ client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key-change-this")
+
+request_log = defaultdict(list)
+RATE_LIMIT = 10
+RATE_WINDOW = 60
+
+def is_rate_limited(ip):
+    now = time.time()
+    request_log[ip] = [t for t in request_log[ip] if now - t < RATE_WINDOW]
+    if len(request_log[ip]) >= RATE_LIMIT:
+        return True
+    request_log[ip].append(now)
+    return False
+
+MAX_SYMPTOM_LENGTH = 1000
 
 EMERGENCY_KEYWORDS = [
     "chest pain", "can't breathe", "cannot breathe", "difficulty breathing",
@@ -82,24 +98,29 @@ Symptoms: {symptoms}
 Duration: {duration if duration else "not specified"}
 Severity (1-10 scale): {severity if severity else "not specified"}{clarification_context}"""
 
-    try:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt
-        )
-        text = response.text.strip()
-        text = text.replace("```json", "").replace("```", "").strip()
-        result = json.loads(text)
-        return result
-    except Exception as e:
-        print("GEMINI ERROR:", e)
-        return {
-            "needs_clarification": False,
-            "likely_body_system": "unknown",
-            "urgency_level": "unknown",
-            "recommended_specialist": "general physician",
-            "reasoning": "Unable to process this request right now. Please consult a doctor for proper evaluation."
-        }
+    max_retries = 2
+    for attempt in range(max_retries + 1):
+        try:
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt
+            )
+            text = response.text.strip()
+            text = text.replace("```json", "").replace("```", "").strip()
+            result = json.loads(text)
+            return result
+        except Exception as e:
+            print(f"GEMINI ERROR (attempt {attempt + 1}):", e)
+            if attempt < max_retries:
+                time.sleep(1.5 * (attempt + 1))
+            else:
+                return {
+                    "needs_clarification": False,
+                    "likely_body_system": "unknown",
+                    "urgency_level": "unknown",
+                    "recommended_specialist": "general physician",
+                    "reasoning": "Unable to process this request right now. Please consult a doctor for proper evaluation."
+                }
 
 def init_db():
     conn = sqlite3.connect("logs.db")
@@ -141,11 +162,14 @@ def index():
     pending_question = session.get("pending_question")
 
     if request.method == "POST":
+        if is_rate_limited(request.remote_addr):
+            return "Too many requests. Please wait a moment and try again.", 429
+
         if request.form.get("clarification_answer") is not None and pending_question:
             symptoms = session.get("pending_symptoms", "")
             duration = session.get("pending_duration", "")
             severity = session.get("pending_severity", "")
-            clarification_answer = request.form.get("clarification_answer", "").strip()
+            clarification_answer = request.form.get("clarification_answer", "").strip()[:MAX_SYMPTOM_LENGTH]
 
             conversation.append({"role": "user", "text": clarification_answer})
 
@@ -174,7 +198,7 @@ def index():
                 pending_question = None
 
         else:
-            symptoms = request.form.get("symptoms", "").strip()
+            symptoms = request.form.get("symptoms", "").strip()[:MAX_SYMPTOM_LENGTH]
             duration = request.form.get("duration", "").strip()
             severity = request.form.get("severity", "").strip()
 
@@ -230,6 +254,7 @@ def history():
     rows = c.fetchall()
     conn.close()
     return render_template("history.html", logs=rows)
+
 @app.route("/stats")
 def stats():
     conn = sqlite3.connect("logs.db")
@@ -257,7 +282,7 @@ def stats():
         top_specialists=top_specialists,
         top_symptoms=top_symptoms
     )
-    
+
 @app.route("/export-csv")
 def export_csv():
     conn = sqlite3.connect("logs.db")
@@ -281,7 +306,7 @@ def export_csv():
         as_attachment=True,
         download_name="symptom_triage_history.csv",
         mimetype="text/csv"
-    )    
+    )
 
 @app.route("/download-pdf")
 def download_pdf():
