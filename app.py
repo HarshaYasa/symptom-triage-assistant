@@ -230,6 +230,33 @@ def history():
     rows = c.fetchall()
     conn.close()
     return render_template("history.html", logs=rows)
+@app.route("/stats")
+def stats():
+    conn = sqlite3.connect("logs.db")
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+
+    c.execute("SELECT COUNT(*) as total FROM logs")
+    total_queries = c.fetchone()["total"]
+
+    c.execute("SELECT urgency, COUNT(*) as count FROM logs GROUP BY urgency ORDER BY count DESC")
+    urgency_breakdown = c.fetchall()
+
+    c.execute("SELECT specialist, COUNT(*) as count FROM logs GROUP BY specialist ORDER BY count DESC LIMIT 10")
+    top_specialists = c.fetchall()
+
+    c.execute("SELECT symptoms, COUNT(*) as count FROM logs GROUP BY symptoms ORDER BY count DESC LIMIT 10")
+    top_symptoms = c.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "stats.html",
+        total_queries=total_queries,
+        urgency_breakdown=urgency_breakdown,
+        top_specialists=top_specialists,
+        top_symptoms=top_symptoms
+    )
 
 @app.route("/download-pdf")
 def download_pdf():
