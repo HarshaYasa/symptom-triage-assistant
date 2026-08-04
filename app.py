@@ -257,6 +257,31 @@ def stats():
         top_specialists=top_specialists,
         top_symptoms=top_symptoms
     )
+    
+@app.route("/export-csv")
+def export_csv():
+    conn = sqlite3.connect("logs.db")
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("SELECT * FROM logs ORDER BY id DESC")
+    rows = c.fetchall()
+    conn.close()
+
+    output = io.StringIO()
+    output.write("Timestamp,Symptoms,Urgency,Specialist\n")
+    for row in rows:
+        symptoms_escaped = row["symptoms"].replace('"', '""')
+        output.write(f'"{row["timestamp"]}","{symptoms_escaped}","{row["urgency"]}","{row["specialist"]}"\n')
+
+    csv_data = output.getvalue()
+    output.close()
+
+    return send_file(
+        io.BytesIO(csv_data.encode("utf-8")),
+        as_attachment=True,
+        download_name="symptom_triage_history.csv",
+        mimetype="text/csv"
+    )    
 
 @app.route("/download-pdf")
 def download_pdf():

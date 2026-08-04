@@ -119,7 +119,10 @@
             <h1>Query history</h1>
             <p class="subtitle">Last 50 triage queries logged</p>
         </div>
-        <a href="/" class="back-link">&larr; Back to triage</a>
+        <div style="display: flex; gap: 16px; align-items: center;">
+            <a href="/export-csv" class="back-link">⬇ Export CSV</a>
+            <a href="/" class="back-link">&larr; Back to triage</a>
+        </div>
     </div>
     <div class="card">
         {% if logs %}
